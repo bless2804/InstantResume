@@ -3,7 +3,9 @@
 ---
 This project started as a small experiment within a larger project to make resume writing easier for students.  
 The app generates three short, professional bullet points for each job title without needing hardcoded descriptions.  
-It runs locally, but an OpenAI API is needed. 
+You can now try it online here: [https://instant-resume.onrender.com/](https://instant-resume.onrender.com/)
+
+It can also run locally, but an OpenAI API key is required for resume generation.
 
 ## Features
 
@@ -26,7 +28,7 @@ It runs locally, but an OpenAI API is needed.
 
 ### Run the project
 
-#### Option 1 — Using IntelliJ IDEA (Recommended)
+#### Option 1 — Using IntelliJ IDEA 
 1. Open **IntelliJ IDEA**.
 2. Click **“Open Project”** and select the folder containing this project (`InstantResume`).
 3. Wait a few seconds for IntelliJ to automatically download all dependencies.

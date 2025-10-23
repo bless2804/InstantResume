@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstantResume | Quick Resume Builder</title>
+
+    <style>
+        :root {
+            --bg: #0b1220;
+            --card: #121a2a;
+            --muted: #94a3b8;
+            --text: #e5e7eb;
+            --accent: #2563eb;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 16px;
+            display: grid;
+            grid-template-columns: 1.4fr 0.6fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid #1f2937;
+            border-radius: 10px;
+            padding: 18px;
+            box-shadow: 0 5px 16px rgba(0, 0, 0, .35);
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 22px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        input, textarea {
+            width: 100%;
+            margin-top: 6px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background: #0b1220;
+            color: var(--text);
+            padding: 9px;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        button.secondary {
+            background: #334155;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .msg {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .ok {
+            background: rgba(22,163,74,0.15);
+            border: 1px solid rgba(22,163,74,0.5);
+        }
+
+        .err {
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.5);
+        }
+
+        .resume {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 8px;
+            overflow: auto;
+        }
+
+        .resume .head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .resume h2 {
+            margin: 0;
+        }
+
+        .resume .muted {
+            color: #94a3b8;
+        }
+
+        .resume .rule {
+            height: 1px;
+            background: #334155;
+            margin: 12px 0;
+        }
+
+        pre {
+            font-family: monospace;
+            margin: 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <div class="card">
+        <h1>InstantResume Generator</h1>
+        <!-- quick input form -->
+        <label>Email</label>
+        <input id="email" type="email" placeholder="you@example.com">
+
+        <label>Full Name</label>
+        <input id="name" type="text" placeholder="Your full name">
+
+        <label>Program</label>
+        <input id="program" type="text" placeholder="e.g. Computer Science">
+
+        <label>University</label>
+        <input id="university" type="text" placeholder="e.g. Carleton University">
+
+        <label>Work Experience Titles</label>
+        <textarea id="jobs" placeholder="e.g. Software Developer Intern, Teaching Assistant"></textarea>
+
+        <div class="actions">
+            <button onclick="generate()">Generate</button>
+            <button class="secondary" onclick="save()">Save</button>
+            <button class="secondary" onclick="loadResume()">Load</button>
+            <button class="secondary" onclick="downloadPdf()">Download PDF</button>
+        </div>
+
+        <div id="msg"></div>
+    </div>
+
+    <div class="card">
+        <h1>Preview</h1>
+        <div id="preview" class="resume"></div>
+        <div id="out"></div>
+    </div>
+</div>
+
+<script>
+    // quick helper functions
+    const get = id => document.getElementById(id);
+    const val = id => get(id).value.trim();
+
+    const show = (type, text) => {
+        const box = get('msg');
+        box.className = 'msg ' + type;
+        box.textContent = text;
+    };
+
+    const buildEducation = (program, university) => {
+        if (program && university) return program + ' — ' + university;
+        return program || university || '';
+    };
+
+    let latestExp = '';
+
+    // main: generate AI resume bullets
+    async function generate() {
+        const email = val('email');
+        const name = val('name');
+        const program = val('program');
+        const university = val('university');
+        const jobs = val('jobs').split(',').map(j => j.trim()).filter(Boolean);
+
+        if (!email || !name || !program || !university || jobs.length === 0) {
+            return show('err', 'please fill all fields before generating');
+        }
+
+        try {
+            const res = await fetch('/api/resume/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, name, program, university, jobs })
+            });
+
+            if (!res.ok) return show('err', `generation failed (${res.status})`);
+
+            const data = await res.json();
+            let html = `<div class="head"><div><h2>${name}</h2></div><div class="muted">${university}</div></div>`;
+            html += '<div class="rule"></div>';
+            html += `<div><strong>Education</strong><div class="muted">${buildEducation(program, university)}</div></div>`;
+            html += '<div><strong>Work Experience</strong>';
+
+            let expText = '';
+            data.forEach(entry => {
+                html += `<div class="muted"><strong>${entry.job}</strong><ul>${entry.bullets.map(b => `<li>${b}</li>`).join('')}</ul></div>`;
+                expText += entry.job + "\n- " + entry.bullets.join("\n- ") + "\n\n";
+            });
+
+            html += '</div>';
+            get('preview').innerHTML = html;
+            latestExp = expText;
+            show('ok', 'generated successfully');
+        } catch (err) {
+            console.error(err);
+            show('err', 'something went wrong (check console)');
+        }
+    }
+
+    // save resume to backend
+    async function save() {
+        const email = val('email');
+        if (!email) return show('err', 'enter your email to save');
+
+        const data = {
+            email: email,
+            name: val('name'),
+            phone: '',
+            address: val('university'),
+            summary: '',
+            education: buildEducation(val('program'), val('university')),
+            experience: latestExp || '',
+            projects: '',
+            skills: ''
+        };
+
+        try {
+            const res = await fetch(`/api/resume/${encodeURIComponent(email)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!res.ok) return show('err', 'save failed (' + res.status + ')');
+            const json = await res.json();
+            show('ok', 'resume saved (id: ' + json.id + ')');
+        } catch (e) {
+            show('err', 'network error: ' + e);
+        }
+    }
+
+    // load resume from backend
+    async function loadResume() {
+        const email = val('email');
+        if (!email) return show('err', 'enter your email to load');
+
+        const res = await fetch(`/api/resume/${encodeURIComponent(email)}`);
+        const out = get('out');
+
+        if (res.ok) {
+            show('ok', 'resume loaded');
+            out.innerHTML = '<pre>' + JSON.stringify(await res.json(), null, 2) + '</pre>';
+        } else {
+            show('err', 'no resume found');
+            out.innerHTML = '';
+        }
+    }
+
+    // download resume as pdf
+    function downloadPdf() {
+        const email = val('email');
+        if (!email) return show('err', 'enter your email first');
+        window.open(`/api/resume/${encodeURIComponent(email)}/pdf`, '_blank');
+    }
+</script>
+</body>
+</html>

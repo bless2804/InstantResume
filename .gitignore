@@ -1,0 +1,31 @@
+
+# ---- Build artifacts ----
+target/
+out/
+bin/
+
+# ---- Compiled class files ----
+*.class
+
+# ---- Log files ----
+*.log
+
+# ---- IntelliJ IDEA files ----
+.idea/
+*.iml
+*.iws
+
+# ---- VS Code settings ----
+.vscode/
+
+# ---- Environment files ----
+.env
+
+# ---- System-specific junk ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# ---- Other generated / cache files ----
+.cache/

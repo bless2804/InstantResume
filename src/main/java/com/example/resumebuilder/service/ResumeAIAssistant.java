@@ -20,12 +20,26 @@ public class ResumeAIAssistant {
 
     // constructor loads .env file automatically
     public ResumeAIAssistant() {
-        Dotenv dotenv = Dotenv.load();
-        this.apiKey = dotenv.get("OPENAI_API_KEY");
+        // try to load from Render environment variable first
+        String keyFromEnv = System.getenv("OPENAI_API_KEY");
+
+        String keyFromFile = null;
+        try {
+            // try to load from .env if available (ignore if missing)
+            Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+            keyFromFile = dotenv.get("OPENAI_API_KEY");
+        } catch (Exception e) {
+            System.out.println(".env file not found, using environment variable instead");
+        }
+
+        // pick whichever source worked
+        this.apiKey = (keyFromEnv != null && !keyFromEnv.isBlank()) ? keyFromEnv : keyFromFile;
 
         if (this.apiKey == null || this.apiKey.isBlank()) {
-            throw new RuntimeException("OPENAI_API_KEY not found in .env file or environment variables.");
+            throw new IllegalStateException("OPENAI_API_KEY not found in environment or .env file.");
         }
+
+        System.out.println("Successfully loaded OpenAI API key.");
     }
 
     /**
